@@ -2,6 +2,7 @@ package com.example.tplabovrecetario;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.os.Bundle;
@@ -9,14 +10,17 @@ import android.os.Handler;
 import android.os.Message;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements Handler.Callback {
+public class MainActivity extends AppCompatActivity implements Handler.Callback, SearchView.OnQueryTextListener {
     public List<Receta> recetaList;
     AdapterReceta adapterReceta;
     Handler handler;
     private String categoriaSeleccionada = "American";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,12 +33,43 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
         cambiarValorURL(categoriaSeleccionada);
     }
 
+    //MENU
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
+
+        //OBTENGO EL SEARCH VIEW
+        MenuItem searchItem = menu.findItem(R.id.svBuscar);
+        SearchView searchView = (SearchView) searchItem.getActionView();
+
+        //CONFIGURO EL LISTENER
+        searchView.setOnQueryTextListener(this);
+
         return true;
     }
 
+    //MENU SEARCHVIEW
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        //CUANDO TOCA ENTER CON EL INGREDIENTE
+
+        String ingrediente = query.replace(" ", "_");
+
+        String rutaS = "https://www.themealdb.com/api/json/v1/1/filter.php?i=" + ingrediente;
+
+        //LE PASO AL HILO LOS VALORES
+        HiloConexion hIngrediente= new HiloConexion(handler, rutaS,recetaList,2);
+        hIngrediente.start();
+        return true;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        // Manejar cambios en el texto de búsqueda
+        return true;
+    }
+
+    //MENU OPCIONES
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
@@ -47,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
         } else if (id == R.id.op3) {
             categoriaSeleccionada = "Mexican";
         }
-        setTitle("Comida tipo "+categoriaSeleccionada);
+        setTitle("Comida tipo " + categoriaSeleccionada);
         cambiarValorURL(categoriaSeleccionada);
         return super.onOptionsItemSelected(item);
     }
@@ -60,10 +95,11 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
         recetaList = new ArrayList<>();
 
         //LE PASO AL HILO LOS VALORES
-        HiloConexion h = new HiloConexion(handler, rutaS, recetaList,seleccion, 0);
+        HiloConexion h = new HiloConexion(handler, rutaS, recetaList, seleccion, 0);
         h.start();
     }
 
+    //MANEJAR HILO
     @Override
     public boolean handleMessage(@NonNull Message message) {
         if (message.arg1 == HiloConexion.CATEGORIAS) {
@@ -89,7 +125,34 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
                 // NOTIFICO AL ADAPTER QUE ACTUALICE LA LISTA
                 this.adapterReceta.notifyDataSetChanged();
             }
+        } else if (message.arg1 == HiloConexion.INGREDIENTES) {
+
+            // ACTUALIZO LA LISTA QUE VIENE DEL OTRO HILO
+            this.recetaList = (List<Receta>) message.obj;
+
+            if (!this.recetaList.isEmpty()) {
+                // GENERO EL RECYCLE VIEW PARA PASARLE ID DEL RECYCLE VIEW DE LAYOUT
+                RecyclerView recyclerView = findViewById(R.id.rvReceta);
+
+                // GENERO EL ADAPTER Y LE PASO LA LISTA
+                this.adapterReceta = new AdapterReceta(this.recetaList, this);
+
+                // LE PASO EL ADAPTER AL RECYCLER VIEW
+                recyclerView.setAdapter(this.adapterReceta);
+
+                // GENERO EL LINEARLAYOUT PARA CONTROLAR COMO SE VA A VER
+                LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+
+                // LE PASO EL LINEARLAYOUT AL RECYCLER VIEW
+                recyclerView.setLayoutManager(linearLayoutManager);
+
+                // NOTIFICO AL ADAPTER QUE ACTUALICE LA LISTA
+                this.adapterReceta.notifyDataSetChanged();
+            }else if (recetaList == null || this.recetaList.isEmpty()){
+                Toast.makeText(this, "No se encontraron recetas con ese ingrediente", Toast.LENGTH_LONG).show();
+            }
         }
         return false;
     }
+
 }

@@ -22,13 +22,21 @@ public class HiloConexion extends Thread {
     Handler handler;
     String ruta;
     List<Receta> recetaList;
+    List<Receta> listaConIngredientes;
     public static final int CATEGORIAS = 0;
     public static final int COMIDA = 1;
+    public static final int INGREDIENTES = 2;
     String seleccion;
     Integer esDetalle;
     String idReceta;
     Receta receta;
 
+    public HiloConexion(Handler handler, String ruta, List<Receta> lista,Integer esDetalle) {
+        this.handler = handler;
+        this.ruta = ruta;
+        this.esDetalle = esDetalle;
+        this.recetaList = lista;
+    }
     public HiloConexion(Handler handler, String ruta, String idReceta, Integer esDetalle) {
         this.handler = handler;
         this.ruta = ruta;
@@ -51,6 +59,9 @@ public class HiloConexion extends Thread {
 
         //CREO MENSAJE PARA PASARLE LOS MENSAJES A LA COLA
         Message message = new Message();
+
+        //recetaList = new ArrayList<>();
+        listaConIngredientes = new ArrayList<>();
 
         ETipoCategoria seleccionado = ETipoCategoria.American;
         if ("Italian".equals(seleccion)) {
@@ -116,6 +127,36 @@ public class HiloConexion extends Thread {
 
             } catch (JSONException e) {
                 Log.e("ERROR", "Error en el JSON2: " + e.getMessage());
+            }
+        }else if(esDetalle == INGREDIENTES)
+        {
+            message.arg1 = INGREDIENTES;
+            try {
+                JSONObject mainJson = new JSONObject(new String(resultado));
+                if(mainJson.has("meals"))
+                {
+                    JSONArray mealsArray = mainJson.getJSONArray("meals");
+
+                    for (int i = 0; i < mealsArray.length(); i++) {
+                        JSONObject ingredientesJSON = mealsArray.getJSONObject(i);
+
+                        listaConIngredientes.add(new Receta(ingredientesJSON.getString("idMeal"),
+                                ingredientesJSON.getString("strMeal"),
+                                "",
+                                Arrays.asList(""),
+                                seleccionado,
+                                "",
+                                ingredientesJSON.optString("strMealThumb", "")));
+                    }
+                    this.recetaList = listaConIngredientes;
+                    message.obj = this.recetaList;
+                }else {
+                    message.obj = this.recetaList;
+                }
+
+            } catch (JSONException e) {
+                Log.e("ERROR", "Error en el JSON3: " + e.getMessage());
+
             }
         }
 
