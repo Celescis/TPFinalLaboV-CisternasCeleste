@@ -33,6 +33,7 @@ android {
 }
 
 dependencies {
+    implementation ("com.google.code.gson:gson:2.9.1")
     implementation ("androidx.recyclerview:recyclerview:1.2.1")
     implementation ("com.squareup.picasso:picasso:2.8")
     implementation("androidx.appcompat:appcompat:1.6.1")

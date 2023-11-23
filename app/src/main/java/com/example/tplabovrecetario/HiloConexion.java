@@ -31,12 +31,13 @@ public class HiloConexion extends Thread {
     String idReceta;
     Receta receta;
 
-    public HiloConexion(Handler handler, String ruta, List<Receta> lista,Integer esDetalle) {
+    public HiloConexion(Handler handler, String ruta, List<Receta> lista, Integer esDetalle) {
         this.handler = handler;
         this.ruta = ruta;
         this.esDetalle = esDetalle;
         this.recetaList = lista;
     }
+
     public HiloConexion(Handler handler, String ruta, String idReceta, Integer esDetalle) {
         this.handler = handler;
         this.ruta = ruta;
@@ -44,12 +45,12 @@ public class HiloConexion extends Thread {
         this.esDetalle = esDetalle;
     }
 
-    public HiloConexion(Handler handler, String ruta, List<Receta> lista, String seleccion, Integer esDetalle){
+    public HiloConexion(Handler handler, String ruta, List<Receta> lista, String seleccion, Integer esDetalle) {
         this.handler = handler;
         this.ruta = ruta;
         this.recetaList = lista;
-        this.seleccion=seleccion;
-        this.esDetalle=esDetalle;
+        this.seleccion = seleccion;
+        this.esDetalle = esDetalle;
     }
 
     public void run() {
@@ -60,7 +61,6 @@ public class HiloConexion extends Thread {
         //CREO MENSAJE PARA PASARLE LOS MENSAJES A LA COLA
         Message message = new Message();
 
-        //recetaList = new ArrayList<>();
         listaConIngredientes = new ArrayList<>();
 
         ETipoCategoria seleccionado = ETipoCategoria.American;
@@ -69,8 +69,7 @@ public class HiloConexion extends Thread {
         } else if ("Mexican".equals(seleccion)) {
             seleccionado = ETipoCategoria.Mexican;
         }
-        if(esDetalle == CATEGORIAS)
-        {
+        if (esDetalle == CATEGORIAS) {
             message.arg1 = CATEGORIAS;
             try {
                 JSONObject mainJson = new JSONObject(new String(resultado));
@@ -93,7 +92,7 @@ public class HiloConexion extends Thread {
             } catch (JSONException e) {
                 Log.e("ERROR", "Error en el JSON: " + e.getMessage());
             }
-        }else if (esDetalle == COMIDA){
+        } else if (esDetalle == COMIDA) {
             message.arg1 = COMIDA;
             try {
                 JSONObject mainJson = new JSONObject(new String(resultado));
@@ -108,12 +107,11 @@ public class HiloConexion extends Thread {
                         String ingrediente = unaRecetaJson.optString("strIngredient" + j, "");
                         String medida = unaRecetaJson.optString("strMeasure" + j, "");
 
-                        if (!ingrediente.isBlank() && !medida.isBlank()) {
+                        if (!ingrediente.equals("null") && !medida.equals("null")&& !ingrediente.isEmpty() && !medida.isEmpty()) {
                             ingredientesConMedida.add(medida + " " + ingrediente);
                         }
                     }
 
-                    Log.d("Lista", "list "+ingredientesConMedida);
                     receta = new Receta(unaRecetaJson.getString("idMeal"),
                             unaRecetaJson.getString("strMeal"),
                             unaRecetaJson.getString("strInstructions"),
@@ -128,35 +126,35 @@ public class HiloConexion extends Thread {
             } catch (JSONException e) {
                 Log.e("ERROR", "Error en el JSON2: " + e.getMessage());
             }
-        }else if(esDetalle == INGREDIENTES)
-        {
+        } else if (esDetalle == INGREDIENTES) {
             message.arg1 = INGREDIENTES;
             try {
                 JSONObject mainJson = new JSONObject(new String(resultado));
-                if(mainJson.has("meals"))
-                {
+
+                if (mainJson.has("meals")) {
                     JSONArray mealsArray = mainJson.getJSONArray("meals");
+                    if (mealsArray != null) {
+                        for (int i = 0; i < mealsArray.length(); i++) {
+                            JSONObject ingredientesJSON = mealsArray.getJSONObject(i);
 
-                    for (int i = 0; i < mealsArray.length(); i++) {
-                        JSONObject ingredientesJSON = mealsArray.getJSONObject(i);
+                            listaConIngredientes.add(new Receta(ingredientesJSON.getString("idMeal"),
+                                    ingredientesJSON.getString("strMeal"),
+                                    "",
+                                    Arrays.asList(""),
+                                    seleccionado,
+                                    "",
+                                    ingredientesJSON.optString("strMealThumb", "")));
 
-                        listaConIngredientes.add(new Receta(ingredientesJSON.getString("idMeal"),
-                                ingredientesJSON.getString("strMeal"),
-                                "",
-                                Arrays.asList(""),
-                                seleccionado,
-                                "",
-                                ingredientesJSON.optString("strMealThumb", "")));
+                        }
+                        this.recetaList = listaConIngredientes;
+                        message.obj = this.recetaList;
                     }
-                    this.recetaList = listaConIngredientes;
-                    message.obj = this.recetaList;
-                }else {
+                } else {
                     message.obj = this.recetaList;
                 }
 
             } catch (JSONException e) {
                 Log.e("ERROR", "Error en el JSON3: " + e.getMessage());
-
             }
         }
 

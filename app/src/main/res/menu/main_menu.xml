@@ -6,6 +6,11 @@
         android:icon="@android:drawable/ic_menu_search"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="ifRoom|collapseActionView" />
+    <item
+        android:id="@+id/btnFavorito"
+        android:icon="@android:drawable/btn_star"
+        android:title="Favorito"
+        app:showAsAction="ifRoom" />
     <item android:id="@+id/op1" android:title="Americano"></item>
 
     <item android:id="@+id/op2" android:title="Italiano"></item>

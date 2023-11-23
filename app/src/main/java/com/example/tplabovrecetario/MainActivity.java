@@ -5,6 +5,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -12,11 +16,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.example.tplabovrecetario.RecetaActivity.RecetaActivity;
+import com.example.tplabovrecetario.RecetasFavoritasActivity.RecetasFavoritas;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements Handler.Callback, SearchView.OnQueryTextListener {
-    public List<Receta> recetaList;
+    public static List<Receta> recetaList;
     AdapterReceta adapterReceta;
     Handler handler;
     private String categoriaSeleccionada = "American";
@@ -58,14 +65,14 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback,
         String rutaS = "https://www.themealdb.com/api/json/v1/1/filter.php?i=" + ingrediente;
 
         //LE PASO AL HILO LOS VALORES
-        HiloConexion hIngrediente= new HiloConexion(handler, rutaS,recetaList,2);
+        HiloConexion hIngrediente = new HiloConexion(handler, rutaS, recetaList, 2);
         hIngrediente.start();
         return true;
     }
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        // Manejar cambios en el texto de búsqueda
+        //PARA CAMBIOS EN EL TEXTO DEL BUSCADOR
         return true;
     }
 
@@ -81,6 +88,10 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback,
             categoriaSeleccionada = "Italian";
         } else if (id == R.id.op3) {
             categoriaSeleccionada = "Mexican";
+        }else if (id == R.id.btnFavorito) {
+            Intent i = new Intent(this, RecetasFavoritas.class);
+            startActivity(i);
+            return true;
         }
         setTitle("Comida tipo " + categoriaSeleccionada);
         cambiarValorURL(categoriaSeleccionada);
@@ -127,30 +138,35 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback,
             }
         } else if (message.arg1 == HiloConexion.INGREDIENTES) {
 
-            // ACTUALIZO LA LISTA QUE VIENE DEL OTRO HILO
-            this.recetaList = (List<Receta>) message.obj;
+            //CHEQUEO SI ME TRAE UNA LISTA
+            if (message.obj != null && message.obj.getClass().equals(ArrayList.class)) {
 
-            if (!this.recetaList.isEmpty()) {
-                // GENERO EL RECYCLE VIEW PARA PASARLE ID DEL RECYCLE VIEW DE LAYOUT
-                RecyclerView recyclerView = findViewById(R.id.rvReceta);
+                // ACTUALIZO LA LISTA QUE VIENE DEL OTRO HILO
+                this.recetaList = (List<Receta>) message.obj;
 
-                // GENERO EL ADAPTER Y LE PASO LA LISTA
-                this.adapterReceta = new AdapterReceta(this.recetaList, this);
+                if (!this.recetaList.isEmpty()) {
+                    // GENERO EL RECYCLE VIEW PARA PASARLE ID DEL RECYCLE VIEW DE LAYOUT
+                    RecyclerView recyclerView = findViewById(R.id.rvReceta);
 
-                // LE PASO EL ADAPTER AL RECYCLER VIEW
-                recyclerView.setAdapter(this.adapterReceta);
+                    // GENERO EL ADAPTER Y LE PASO LA LISTA
+                    this.adapterReceta = new AdapterReceta(this.recetaList, this);
 
-                // GENERO EL LINEARLAYOUT PARA CONTROLAR COMO SE VA A VER
-                LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+                    // LE PASO EL ADAPTER AL RECYCLER VIEW
+                    recyclerView.setAdapter(this.adapterReceta);
 
-                // LE PASO EL LINEARLAYOUT AL RECYCLER VIEW
-                recyclerView.setLayoutManager(linearLayoutManager);
+                    // GENERO EL LINEARLAYOUT PARA CONTROLAR COMO SE VA A VER
+                    LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
 
-                // NOTIFICO AL ADAPTER QUE ACTUALICE LA LISTA
-                this.adapterReceta.notifyDataSetChanged();
-            }else if (recetaList == null || this.recetaList.isEmpty()){
-                Toast.makeText(this, "No se encontraron recetas con ese ingrediente", Toast.LENGTH_LONG).show();
+                    // LE PASO EL LINEARLAYOUT AL RECYCLER VIEW
+                    recyclerView.setLayoutManager(linearLayoutManager);
+
+                    // NOTIFICO AL ADAPTER QUE ACTUALICE LA LISTA
+                    this.adapterReceta.notifyDataSetChanged();
+                }
+            } else {
+                Toast.makeText(this, "No se encontraron recetas con ese ingrediente", Toast.LENGTH_SHORT).show();
             }
+
         }
         return false;
     }
